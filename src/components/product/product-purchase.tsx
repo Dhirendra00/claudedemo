@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { buttonStyles } from "@/components/ui/button-link";
-import type { Product } from "@/lib/sample-catalog";
+import type { Product } from "@/lib/product";
 
 const MAX_PER_ORDER = 10;
 

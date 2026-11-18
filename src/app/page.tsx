@@ -7,9 +7,14 @@ import { PromoTiles } from "@/components/home/promo-tiles";
 import { SectionHeading } from "@/components/home/section-heading";
 import { ServiceHighlights } from "@/components/home/service-highlights";
 import { ProductRail } from "@/components/product/product-rail";
-import { products } from "@/lib/sample-catalog";
+import { getFeaturedProducts } from "@/lib/catalog";
 
-export default function Home() {
+// Re-render at most once a minute so price and stock changes show up.
+export const revalidate = 60;
+
+export default async function Home() {
+  const products = await getFeaturedProducts();
+
   return (
     <main className="flex-1">
       <h1 className="sr-only">Racket Point Nepal — badminton, tennis, padel and squash equipment</h1>

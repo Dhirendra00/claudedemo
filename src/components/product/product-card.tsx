@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { discountPercent, formatPrice, stockState, type Product } from "@/lib/sample-catalog";
+import { discountPercent, formatPrice, stockState, type Product } from "@/lib/product";
 
 type ProductCardProps = {
   product: Product;

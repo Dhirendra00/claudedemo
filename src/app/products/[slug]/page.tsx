@@ -8,32 +8,32 @@ import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductPurchase } from "@/components/product/product-purchase";
 import { ProductRail } from "@/components/product/product-rail";
 import { StockStatus } from "@/components/product/stock-status";
-import {
-  discountPercent,
-  formatPrice,
-  getCategory,
-  getProduct,
-  products,
-  relatedProducts,
-} from "@/lib/sample-catalog";
+import { getProductBySlug, getProductSlugs, getRelatedProducts } from "@/lib/catalog";
+import { discountPercent, formatPrice } from "@/lib/product";
 
-export function generateStaticParams() {
-  return products.map((product) => ({ slug: product.slug }));
+// Re-render at most once a minute so price and stock changes show up.
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const slugs = await getProductSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/products/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProduct(slug);
-  if (!product) return {};
+  const result = await getProductBySlug(slug);
+  if (!result) return {};
+  const { product } = result;
   return { title: product.name, description: product.description };
 }
 
 export default async function ProductPage({ params }: PageProps<"/products/[slug]">) {
   const { slug } = await params;
-  const product = getProduct(slug);
-  if (!product) notFound();
+  const result = await getProductBySlug(slug);
+  if (!result) notFound();
 
-  const category = getCategory(product.collection);
+  const { product, category } = result;
+  const relatedProducts = await getRelatedProducts(product);
   const discount = discountPercent(product);
   const services = [
     { title: "Valley delivery", detail: "Free in Kathmandu Valley over Rs. 5,000, usually in 1–2 days." },
@@ -170,7 +170,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             title="You may also like"
             link={category && { label: `Shop ${category.title.toLowerCase()}`, href: `/collections/${category.slug}` }}
           />
-          <ProductRail products={relatedProducts(product)} label="Related products" />
+          <ProductRail products={relatedProducts} label="Related products" />
         </div>
       </section>
     </main>

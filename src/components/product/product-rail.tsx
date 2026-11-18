@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { ArrowLeftIcon, ArrowRightIcon } from "@/components/ui/icons";
-import type { Product } from "@/lib/sample-catalog";
+import type { Product } from "@/lib/product";
 import { ProductCard } from "./product-card";
 
 type ProductRailProps = {

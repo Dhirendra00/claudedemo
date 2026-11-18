@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { categories } from "@/lib/sample-catalog";
+import { getCategories } from "@/lib/catalog";
 import { SectionHeading } from "./section-heading";
 
-export function CategoryGrid() {
+export async function CategoryGrid() {
+  const categories = await getCategories();
+
   return (
     <section aria-labelledby="categories-heading" className="shell py-12 lg:py-16">
       <SectionHeading

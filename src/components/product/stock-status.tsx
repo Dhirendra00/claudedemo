@@ -1,4 +1,4 @@
-import { stockState, type Product } from "@/lib/sample-catalog";
+import { stockState, type Product } from "@/lib/product";
 
 export function StockStatus({ product }: { product: Product }) {
   const state = stockState(product);
