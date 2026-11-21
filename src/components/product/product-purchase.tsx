@@ -1,18 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { buttonStyles } from "@/components/ui/button-link";
+import { QuantityStepper } from "@/components/ui/quantity-stepper";
+import { addToCart, MAX_PER_ORDER } from "@/lib/cart";
 import type { Product } from "@/lib/product";
 
-const MAX_PER_ORDER = 10;
+type ProductPurchaseProps = {
+  product: Pick<Product, "slug" | "name" | "brand" | "images" | "price" | "compareAtPrice" | "stock" | "option">;
+};
 
-type ProductPurchaseProps = Pick<Product, "name" | "stock" | "option">;
-
-// UI only — there is no cart backend yet, so adding just confirms on screen.
-export function ProductPurchase({ name, stock, option }: ProductPurchaseProps) {
+export function ProductPurchase({ product }: ProductPurchaseProps) {
+  const { name, stock, option } = product;
   const [selected, setSelected] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+  const [message, setMessage] = useState<{ text: string; error?: boolean; link?: boolean } | null>(null);
 
   const soldOut = stock <= 0;
   const maxQuantity = Math.min(stock, MAX_PER_ORDER);
@@ -24,8 +27,13 @@ export function ProductPurchase({ name, stock, option }: ProductPurchaseProps) {
       setMessage({ text: `Choose your ${label} first.`, error: true });
       return;
     }
+    const added = addToCart(product, quantity, selected ?? undefined);
+    if (added === 0) {
+      setMessage({ text: `Your bag already holds the most we can sell of this item (${maxQuantity}).`, error: true });
+      return;
+    }
     const variant = selected ? ` (${selected})` : "";
-    setMessage({ text: `Added ${quantity} × ${name}${variant} to your bag.` });
+    setMessage({ text: `Added ${added} × ${name}${variant} to your bag.`, link: true });
   }
 
   if (soldOut) {
@@ -82,30 +90,7 @@ export function ProductPurchase({ name, stock, option }: ProductPurchaseProps) {
       )}
 
       <div className="flex gap-3">
-        <div className="flex h-12 items-center border border-line">
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-            disabled={quantity <= 1}
-            aria-label="Decrease quantity"
-            className="grid h-full w-11 place-items-center disabled:text-line"
-          >
-            −
-          </button>
-          <span aria-live="polite" className="w-8 text-center text-sm tabular-nums">
-            <span className="sr-only">Quantity </span>
-            {quantity}
-          </span>
-          <button
-            type="button"
-            onClick={() => setQuantity((q) => Math.min(maxQuantity, q + 1))}
-            disabled={quantity >= maxQuantity}
-            aria-label="Increase quantity"
-            className="grid h-full w-11 place-items-center disabled:text-line"
-          >
-            +
-          </button>
-        </div>
+        <QuantityStepper value={quantity} max={maxQuantity} onChange={setQuantity} />
         <button type="button" onClick={addToBag} className={`${buttonStyles("solid")} flex-1`}>
           Add to bag
         </button>
@@ -114,6 +99,14 @@ export function ProductPurchase({ name, stock, option }: ProductPurchaseProps) {
       {message && (
         <p role={message.error ? "alert" : "status"} className={`text-sm ${message.error ? "text-sale" : ""}`}>
           {message.text}
+          {message.link && (
+            <>
+              {" "}
+              <Link href="/cart" className="underline underline-offset-4 hover:opacity-60">
+                View bag
+              </Link>
+            </>
+          )}
         </p>
       )}
     </div>

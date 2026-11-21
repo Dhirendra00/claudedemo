@@ -10,10 +10,12 @@ import {
   SearchIcon,
   UserIcon,
 } from "@/components/ui/icons";
+import { useCart } from "@/lib/cart";
 import { mainNav, utilityNav } from "@/lib/site-nav";
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { count } = useCart();
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -94,11 +96,11 @@ export function SiteHeader() {
               <UserIcon />
               <span className="eyebrow hidden lg:inline">Account</span>
             </Link>
-            <Link href="/cart" aria-label="Bag, 0 items" className="flex h-10 items-center gap-2 px-2">
+            <Link href="/cart" aria-label={`Bag, ${count} ${count === 1 ? "item" : "items"}`} className="flex h-10 items-center gap-2 px-2">
               <span className="relative">
                 <BagIcon />
-                <span className="absolute -top-1.5 -right-2 grid size-4 place-items-center rounded-full bg-ink text-[0.5625rem] font-medium text-paper">
-                  0
+                <span className="absolute -top-1.5 -right-2 grid size-4 place-items-center rounded-full bg-ink text-[0.5625rem] font-medium text-paper tabular-nums">
+                  {count > 9 ? "9+" : count}
                 </span>
               </span>
               <span className="eyebrow ml-1 hidden lg:inline">Bag</span>

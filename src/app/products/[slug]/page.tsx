@@ -125,7 +125,7 @@ export default async function ProductPage({ params }: PageProps<"/products/[slug
             </ul>
 
             <div className="mt-8">
-              <ProductPurchase name={product.name} stock={product.stock} option={product.option} />
+              <ProductPurchase product={product} />
             </div>
 
             <ul className="mt-8 grid gap-4 border-y border-line py-6 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
