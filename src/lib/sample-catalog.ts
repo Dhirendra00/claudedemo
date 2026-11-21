@@ -38,7 +38,7 @@ export const heroSlides: HeroSlide[] = [
     eyebrow: "Autumn–Winter 2026",
     title: "Built for the long rally",
     body: "Tournament-grade rackets, court footwear and apparel for the season ahead.",
-    cta: { label: "Shop new in", href: "/collections/new" },
+    cta: { label: "Shop new in", href: "/new-arrivals" },
     image: pexels(34015711, 2400),
     imageAlt: "Two tennis rackets and balls resting on a sunlit court, in black and white",
   },

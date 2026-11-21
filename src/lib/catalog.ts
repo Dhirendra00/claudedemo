@@ -1,6 +1,6 @@
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { cache } from "react";
 import { db } from "@/db";
 import { categories, products } from "@/db/schema";
@@ -57,6 +57,30 @@ export async function getFeaturedProducts(): Promise<Product[]> {
   const rows = await db.query.products.findMany({
     with: withCategoryAndStock,
     orderBy: asc(products.sortOrder),
+  });
+  return rows.map(toProduct);
+}
+
+/** A category and its products in display order. Cached per request so `generateMetadata` and the page share one lookup. */
+export const getCategoryWithProducts = cache(
+  async (slug: string): Promise<{ category: Collection; products: Product[] } | undefined> => {
+    const category = await db.query.categories.findFirst({ where: eq(categories.slug, slug) });
+    if (!category) return undefined;
+    const rows = await db.query.products.findMany({
+      where: eq(products.categoryId, category.id),
+      with: withCategoryAndStock,
+      orderBy: asc(products.sortOrder),
+    });
+    return { category: toCollection(category), products: rows.map(toProduct) };
+  },
+);
+
+/** Most recently added products first; `sort_order` breaks ties between rows created together (e.g. by the seed). */
+export async function getNewArrivals(limit = 12): Promise<Product[]> {
+  const rows = await db.query.products.findMany({
+    with: withCategoryAndStock,
+    orderBy: [desc(products.createdAt), asc(products.sortOrder)],
+    limit,
   });
   return rows.map(toProduct);
 }

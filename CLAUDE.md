@@ -52,7 +52,8 @@ npm run db:seed        # upsert sample categories, products and stock from src/d
 Copy `.env.example` to `.env.local`. `drizzle.config.ts` loads `.env.local` first, then `.env`, using dotenv. Next.js loads them itself.
 
 - `DATABASE_URL`: Neon pooled connection string. `src/db/index.ts` throws at import time if it is missing. Any module that imports `@/db` (including the auth route) needs it at build time, so `next build` fails without it.
-- `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`: read automatically by Better Auth.
+- `BETTER_AUTH_SECRET`: required, at least 32 random characters (`openssl rand -base64 32`), and different in every environment. `src/lib/auth.ts` throws at import time without it, so `next build` fails too. Never commit it, and never rely on Better Auth's built-in default secret.
+- `BETTER_AUTH_URL`: read automatically by Better Auth.
 - `NEXT_PUBLIC_APP_URL`: `baseURL` for the browser auth client.
 
 ## Architecture
