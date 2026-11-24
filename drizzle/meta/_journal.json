@@ -8,6 +8,13 @@
       "when": 1793746371369,
       "tag": "0000_worthless_kate_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795286813370,
+      "tag": "0001_ordinary_sunset_bain",
+      "breakpoints": true
     }
   ]
 }

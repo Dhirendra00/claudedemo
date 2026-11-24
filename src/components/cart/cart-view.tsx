@@ -5,10 +5,8 @@ import Link from "next/link";
 import { ButtonLink, TextLink } from "@/components/ui/button-link";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { removeLine, setLineQuantity, useCart, type CartLine } from "@/lib/cart";
+import { FREE_DELIVERY_THRESHOLD } from "@/lib/checkout";
 import { formatPrice } from "@/lib/product";
-
-// Matches the delivery promise in ServiceHighlights.
-const FREE_DELIVERY_THRESHOLD = 5000;
 
 export function CartView() {
   const { items, ready, count, subtotal, savings } = useCart();

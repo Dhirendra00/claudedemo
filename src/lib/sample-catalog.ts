@@ -4,7 +4,9 @@
 
 export type Brand = {
   slug: string;
+  /** Must match `products.brand` exactly; brand pages look products up by this name. */
   name: string;
+  description: string;
 };
 
 export type HeroSlide = {
@@ -28,6 +30,10 @@ export type Faq = {
   question: string;
   answer: string;
 };
+
+export function findBrand(slug: string) {
+  return brands.find((brand) => brand.slug === slug);
+}
 
 export function pexels(id: number, width = 1600) {
   return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${width}`;
@@ -61,12 +67,36 @@ export const heroSlides: HeroSlide[] = [
 ];
 
 export const brands: Brand[] = [
-  { slug: "aerocourt", name: "Aerocourt" },
-  { slug: "featherline", name: "Featherline" },
-  { slug: "courtline", name: "Courtline" },
-  { slug: "himal-pro", name: "Himal Pro" },
-  { slug: "rallycraft", name: "Rallycraft" },
-  { slug: "summit-edge", name: "Summit Edge" },
+  {
+    slug: "aerocourt",
+    name: "Aerocourt",
+    description: "Badminton specialists building fast, aerodynamic frames for attacking doubles play.",
+  },
+  {
+    slug: "featherline",
+    name: "Featherline",
+    description: "Feather shuttles graded for flight and durability, from club practice to tournament play.",
+  },
+  {
+    slug: "courtline",
+    name: "Courtline",
+    description: "Tennis rackets and sets with forgiving sweet spots for club players moving up a level.",
+  },
+  {
+    slug: "himal-pro",
+    name: "Himal Pro",
+    description: "Court shoes built for grip and support through long sessions on indoor and hard courts.",
+  },
+  {
+    slug: "rallycraft",
+    name: "Rallycraft",
+    description: "Carbon padel paddles and accessories made for the speed of the glass court.",
+  },
+  {
+    slug: "summit-edge",
+    name: "Summit Edge",
+    description: "Ready-to-play kits and bags that get new players on court in one purchase.",
+  },
 ];
 
 export const promoTiles: PromoTile[] = [

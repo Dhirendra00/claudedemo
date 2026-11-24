@@ -7,6 +7,8 @@ export type NavCategory = NavLink & {
   highlight?: boolean;
 };
 
+// Top-level links are database categories or curated collections (`@/lib/collections`);
+// brand links match `brands` in `@/lib/sample-catalog`.
 export const mainNav: NavCategory[] = [
   {
     label: "Rackets",
@@ -22,12 +24,12 @@ export const mainNav: NavCategory[] = [
         ],
       },
       {
-        title: "By level",
+        title: "Shop",
         links: [
-          { label: "Beginner", href: "/collections/rackets?level=beginner" },
-          { label: "Intermediate", href: "/collections/rackets?level=intermediate" },
-          { label: "Advanced", href: "/collections/rackets?level=advanced" },
           { label: "Junior", href: "/collections/junior-rackets" },
+          { label: "Bestsellers", href: "/collections/bestsellers" },
+          { label: "Buying guide", href: "/guides/badminton-rackets" },
+          { label: "Stringing service", href: "/services/stringing" },
         ],
       },
       {
@@ -54,11 +56,10 @@ export const mainNav: NavCategory[] = [
         ],
       },
       {
-        title: "By fit",
+        title: "Help",
         links: [
-          { label: "Men", href: "/collections/shoes?fit=men" },
-          { label: "Women", href: "/collections/shoes?fit=women" },
-          { label: "Junior", href: "/collections/shoes?fit=junior" },
+          { label: "Court shoe sizing", href: "/guides/shoe-sizing" },
+          { label: "Himal Pro", href: "/brands/himal-pro" },
         ],
       },
     ],
@@ -108,6 +109,7 @@ export const mainNav: NavCategory[] = [
       },
     ],
   },
+  { label: "Padel", href: "/collections/padel" },
   { label: "Sale", href: "/collections/sale", highlight: true },
 ];
 
