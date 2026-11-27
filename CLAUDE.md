@@ -54,7 +54,9 @@ Copy `.env.example` to `.env.local`. `drizzle.config.ts` loads `.env.local` firs
 - `DATABASE_URL`: Neon pooled connection string. `src/db/index.ts` throws at import time if it is missing. Any module that imports `@/db` (including the auth route) needs it at build time, so `next build` fails without it.
 - `BETTER_AUTH_SECRET`: required, at least 32 random characters (`openssl rand -base64 32`), and different in every environment. `src/lib/auth.ts` throws at import time without it, so `next build` fails too. Never commit it, and never rely on Better Auth's built-in default secret.
 - `BETTER_AUTH_URL`: read automatically by Better Auth.
-- `NEXT_PUBLIC_APP_URL`: `baseURL` for the browser auth client.
+- `NEXT_PUBLIC_APP_URL`: the public site URL, for absolute links only (metadata, emails, payment return URLs). The browser auth client does **not** use it: `createAuthClient()` in `src/lib/auth-client.ts` is created without `baseURL`, so it always calls the current origin (localhost in dev, the Vercel/beta domain when deployed). Never reintroduce a hard-coded or env-based `baseURL` there.
+- Local `.env.local` keeps `http://localhost:3000` values. Preview (beta, `develop` branch) and Production (`main`) values live only in Vercel's Environment Variables, without quotes or trailing slashes. Changing a `NEXT_PUBLIC_` variable needs a redeploy because it is inlined at build time.
+- Never hard-code URLs, keys or secrets in code; read them from `process.env`. Never prefix a secret with `NEXT_PUBLIC_`. `.env*` files (except `.env.example`) are never committed.
 
 ## Architecture
 
@@ -79,3 +81,68 @@ Request flow for auth: `authClient` (`src/lib/auth-client.ts`, `better-auth/reac
 - **Migrations:** always `db:generate` → review the SQL → `db:migrate`, and commit `drizzle/`. Don't use `db:push` against shared/real data.
 - **Seeding:** sample data lives in `src/db/seed-data.ts`. `src/db/seed.ts` must stay idempotent: upsert by slug and group writes with `db.batch` (neon-http has no transactions).
 - **Freshness:** catalog pages use `export const revalidate = 60` (ISR), so `next build` queries the DB.
+
+## Code organization (no repetition)
+
+Every server-side request follows one path: **UI → Server Action or Route Handler → validate (Zod) → check session/role → domain module → `@/db`**.
+
+- **Domain modules** follow the `catalog.ts` pattern: one server-only file per domain in `src/lib/` (`catalog.ts`, later `cart.ts`, `orders.ts`, `payments.ts`), starting with `import "server-only"`. They hold all business logic and all `@/db` queries for that domain.
+- **Server Actions and Route Handlers stay thin** (about 20 lines): validate input, call a guard, call a domain module, return a result. No `@/db` queries in them.
+- **Validation:** one Zod schema per input in `src/lib/validators/`, shared by the form and the server. Use `.strict()` objects, length limits and `z.coerce` for numbers from forms.
+- **Auth checks** only through `requireUser()` / `requireAdmin()` in `src/lib/guards.ts` (server-only). Don't repeat `getSession` checks inline.
+- **Money formatting** only through one helper in `src/lib/product.ts` (or a dedicated `src/lib/money.ts` if it grows). Prices stay whole NPR integers.
+- Before writing a new helper, search `src/lib` for an existing one and extend it. If the same logic appears in two places, extract it.
+- No speculative code: don't add options, abstractions, files or dependencies the current task doesn't need. Use plain names (`getProductBySlug`, `placeOrder`); no clever one-liners or comments that restate the code.
+- Keep changes focused. Never reformat, restyle or refactor unrelated files, and never change design tokens, colors, fonts or layout rules above unless the task is explicitly about design.
+
+Guard pattern (role check applies once the Better Auth admin plugin is added):
+
+```ts
+// src/lib/guards.ts
+import "server-only";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+
+export async function requireUser() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("UNAUTHORIZED");
+  return session.user;
+}
+
+export async function requireAdmin() {
+  const user = await requireUser();
+  if (user.role !== "admin") throw new Error("FORBIDDEN");
+  return user;
+}
+```
+
+## Security rules (non-negotiable)
+
+1. **Never trust the client.** Prices, totals, delivery fees, discounts and stock are always recalculated on the server from the database. Ignore any price or total sent from the browser.
+2. **Authorize inside every Server Action and Route Handler**, not only in `proxy.ts`. Proxy/middleware is a convenience, not a security boundary. Admin operations call `requireAdmin()` first.
+3. **Check ownership.** Users may only read or change their own cart, addresses and orders: filter by the `userId` from the session, never by an id from input.
+4. **Validate every input** with Zod before it reaches a domain module, including route params, search params and webhook bodies.
+5. **Stock changes are atomic.** Decrement with a conditional update (`quantity = quantity - n WHERE quantity >= n`) and treat zero affected rows as out of stock. Order creation plus stock decrement must be all-or-nothing: neon-http has no `db.transaction()`, so plan this before building checkout (`db.batch`, or switch the order path to the `neon-serverless` driver for interactive transactions).
+6. **Payments (eSewa/Khalti) are verified server-to-server** before an order is marked paid. Never trust a success redirect alone. Check the paid amount equals the order total, and make verification idempotent (each transaction id processed once). Payment callback routes are excluded from the beta password gate but still verify everything.
+7. **SQL:** use Drizzle's query builder or the `sql` tagged template. Never pass user input to `sql.raw()` or build SQL strings by concatenation.
+8. **Errors:** show users a short, safe message; log details on the server. Never return stack traces, DB errors or internal ids to the client.
+9. **Logging:** never log secrets, session tokens, passwords, OTPs or full payment responses with personal data.
+10. **No `dangerouslySetInnerHTML`.** Render reviews, product descriptions and any user text as plain text.
+11. **Uploads** (product images, once added) are admin-only, images only, size-limited, via signed uploads to the image host.
+12. **Rate limits** on sign-in, sign-up, OTP and checkout (Better Auth's built-in rate limiting for auth routes).
+13. **Dependencies:** don't add packages without a clear need; prefer well-maintained ones. Keep `npm audit` clean of high/critical issues.
+14. `never read .env` applies to every `.env*` file except `.env.example`. If a value is needed, ask the user.
+
+## Deployment and branches
+
+- Hosted on Vercel from GitHub. `main` → Production; `develop` → Preview, shown to the team at the beta subdomain (password-gated via `BETA_PASSWORD` in `proxy.ts`, skipped when the variable is unset, with `X-Robots-Tag: noindex`).
+- Workflow: `feature/*` → pull request into `develop` (beta) → pull request from `develop` into `main` (production). Never commit directly to `main`.
+- Beta and production use separate Neon branches/databases. Never run `db:push` or destructive scripts against production data.
+
+## Working in this repo
+
+- One feature per branch and per pull request. Commit messages use conventional prefixes (`feat:`, `fix:`, `chore:`, `refactor:`).
+- Plan first and wait for approval for anything touching auth, orders, payments, stock or the schema.
+- Before saying a task is done: run `npm run lint` and `npm run typecheck` and fix all errors. Once a test runner exists, run the tests too.
+- When cart/order/payment logic is added, set up Vitest and cover the main path plus failure cases (out of stock, wrong user, invalid input, tampered price).
+- Run `/security-review` on branches that touch auth, orders or payments before merging.
